@@ -60,3 +60,7 @@ _build
 
 # Pre-Trained Checkpoints
 /.pretrained_checkpoints/
+
+# Add these lines to .gitignore
+scripts/sns_lab/*
+!scripts/sns_lab/.gitkeep
