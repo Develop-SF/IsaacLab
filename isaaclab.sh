@@ -18,6 +18,9 @@ tabs 4
 # get source directory
 export ISAACLAB_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+# Add scripts directory to Python path
+export PYTHONPATH=$PYTHONPATH:$ISAACLAB_PATH/scripts
+
 #==
 # Helper functions
 #==

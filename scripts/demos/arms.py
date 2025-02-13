@@ -54,6 +54,13 @@ from isaaclab_assets import (
     SAWYER_CFG,
 )
 
+# import Shennongshi lab robots
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+from sns_lab.robots.ur10e import UR10E_LOWPLOY_CFG
+
 # isort: on
 
 
@@ -83,7 +90,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
 
     # Create separate groups called "Origin1", "Origin2", "Origin3"
     # Each group will have a mount and a robot on top of it
-    origins = define_origins(num_origins=6, spacing=2.0)
+    origins = define_origins(num_origins=7, spacing=2.0)
 
     # Origin 1 with Franka Panda
     prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
@@ -149,6 +156,16 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     sawyer_arm_cfg.init_state.pos = (0.0, 0.0, 1.03)
     sawyer = Articulation(cfg=sawyer_arm_cfg)
 
+    # Origin 7 with UR10e
+    prim_utils.create_prim("/World/Origin7", "Xform", translation=origins[6])
+    # -- Table
+    cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd")
+    cfg.func("/World/Origin7/Table", cfg, translation=(0.55, 0.0, 1.05))
+    # -- Robot
+    ur10e_cfg = UR10E_LOWPLOY_CFG.replace(prim_path="/World/Origin7/Robot")
+    ur10e_cfg.init_state.pos = (0.0, 0.0, 1.05)
+    ur10e = Articulation(cfg=ur10e_cfg)
+
     # return the scene information
     scene_entities = {
         "franka_panda": franka_panda,
@@ -157,6 +174,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
         "kinova_j2n6s300": kinova_j2n6s300,
         "kinova_gen3n7": kinova_gen3n7,
         "sawyer": sawyer,
+        "ur10e": ur10e,
     }
     return scene_entities, origins
 
