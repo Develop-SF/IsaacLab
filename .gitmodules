@@ -1,0 +1,3 @@
+[submodule "scripts/sns_lab"]
+	path = scripts/sns_lab
+	url = git@github.com:Develop-SF/sns_lab.git
