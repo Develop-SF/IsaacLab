@@ -56,6 +56,15 @@ or opening a question on its [forums](https://forums.developer.nvidia.com/c/agx-
 * Please use GitHub [Discussions](https://github.com/isaac-sim/IsaacLab/discussions) for discussing ideas, asking questions, and requests for new features.
 * Github [Issues](https://github.com/isaac-sim/IsaacLab/issues) should only be used to track executable pieces of work with a definite scope and a clear deliverable. These can be fixing bugs, documentation issues, new features, or general updates.
 
+## Shennongshi Lab
+
+Shennongshi Lab is a lab for the Shennongshi project, which is a project for the Shennongshi robots. The scripts are proprietary and contained in the `scripts/sns_lab` submodule.
+
+To initialize the submodule, run the following command:
+```bash
+git submodule update --init --recursive
+```
+
 ## License
 
 The Isaac Lab framework is released under [BSD-3 License](LICENSE). The `isaaclab_mimic` extension and its corresponding standalone scripts are released under [Apache 2.0](LICENSE-mimic). The license files of its dependencies and assets are present in the [`docs/licenses`](docs/licenses) directory.
