@@ -86,6 +86,10 @@ def design_scene():
     # spawn a usd file of a table into the scene
     cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd")
     cfg.func("/World/Objects/Table", cfg, translation=(0.0, 0.0, 1.05))
+    
+    # spawn emily
+    cfg = sim_utils.UsdFileCfg(usd_path=f"omniverse://192.168.22.141/ShenNongShi/SNS-RobotChefSystem-2F/sns_emily_wok_listener.usd")
+    cfg.func("/World/Objects/Emily", cfg, translation=(-5.0, 0.0, 0.0))
 
 
 def main():
