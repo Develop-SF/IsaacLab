@@ -60,7 +60,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from sns_lab.robots.ur10e import UR10E_LOWPLOY_CFG
-
+from sns_lab.robots.emily import EMILY_CFG
 # isort: on
 
 
@@ -90,7 +90,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
 
     # Create separate groups called "Origin1", "Origin2", "Origin3"
     # Each group will have a mount and a robot on top of it
-    origins = define_origins(num_origins=7, spacing=2.0)
+    origins = define_origins(num_origins=8, spacing=3.0)
 
     # Origin 1 with Franka Panda
     prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
@@ -166,6 +166,21 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     ur10e_cfg.init_state.pos = (0.0, 0.0, 1.05)
     ur10e = Articulation(cfg=ur10e_cfg)
 
+    # Origin 8 with Emily
+    prim_utils.create_prim("/World/Origin8", "Xform", translation=origins[7])
+    # -- Table
+    cfg = sim_utils.UsdFileCfg(
+        usd_path="omniverse://192.168.22.141/ShenNongShi/Assets/robot_stand_instanceable.usd",
+        scale=(0.01, 0.01, 0.01),
+    )
+    cfg.func("/World/Origin8/Table", cfg, translation=(0.0, -0.75055, 0.0), orientation=(0.7071068, 0.7071068, 0.0, 0.0))
+    # -- Robot
+    emily_cfg = EMILY_CFG.replace(prim_path="/World/Origin8/Robot")
+    emily_cfg.init_state.pos = (0.0, 0.0, 0.824)
+    # yaw 180 degrees in quaternion
+    emily_cfg.init_state.rot = (0.0, 0.0, 0.0, 1.0)
+    emily = Articulation(cfg=emily_cfg)
+
     # return the scene information
     scene_entities = {
         "franka_panda": franka_panda,
@@ -175,6 +190,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
         "kinova_gen3n7": kinova_gen3n7,
         "sawyer": sawyer,
         "ur10e": ur10e,
+        "emily": emily,
     }
     return scene_entities, origins
 
