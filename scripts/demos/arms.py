@@ -178,7 +178,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     emily_cfg = EMILY_CFG.replace(prim_path="/World/Origin8/Robot")
     emily_cfg.init_state.pos = (0.0, 0.0, 0.824)
     # yaw 180 degrees in quaternion
-    emily_cfg.init_state.rot = (0.0, 0.0, 0.0, 1.0)
+    # emily_cfg.init_state.rot = (0.0, 0.0, 0.0, 1.0)
     emily = Articulation(cfg=emily_cfg)
 
     # return the scene information
