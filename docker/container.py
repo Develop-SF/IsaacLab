@@ -26,7 +26,7 @@ def parse_cli_args() -> argparse.Namespace:
     # We have to create separate parent parsers for common options to our subparsers
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument(
-        "profile", nargs="?", default="base", help="Optional container profile specification. Example: 'base' or 'ros'."
+        "profile", nargs="?", default="base", help="Optional container profile specification. Example: 'base' or 'ros2'."
     )
     parent_parser.add_argument(
         "--files",
