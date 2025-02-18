@@ -41,6 +41,9 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
+#import omni
+#ext_manager = omni.kit.app.get_app().get_extension_manager()
+#ext_manager.set_extension_enabled_immediate("omni.isaac.ros2_bridge", True)
 ##
 # Pre-defined configs
 ##
@@ -91,7 +94,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     # Create separate groups called "Origin1", "Origin2", "Origin3"
     # Each group will have a mount and a robot on top of it
     origins = define_origins(num_origins=8, spacing=3.0)
-
+    """
     # Origin 1 with Franka Panda
     prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
     # -- Table
@@ -165,15 +168,15 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     ur10e_cfg = UR10E_LOWPLOY_CFG.replace(prim_path="/World/Origin7/Robot")
     ur10e_cfg.init_state.pos = (0.0, 0.0, 1.05)
     ur10e = Articulation(cfg=ur10e_cfg)
-
+    """
     # Origin 8 with Emily
     prim_utils.create_prim("/World/Origin8", "Xform", translation=origins[7])
     # -- Table
-    cfg = sim_utils.UsdFileCfg(
-        usd_path="omniverse://192.168.22.141/ShenNongShi/Assets/robot_stand_instanceable.usd",
-        scale=(0.01, 0.01, 0.01),
-    )
-    cfg.func("/World/Origin8/Table", cfg, translation=(0.0, -0.75055, 0.0), orientation=(0.7071068, 0.7071068, 0.0, 0.0))
+    # cfg = sim_utils.UsdFileCfg(
+    #     usd_path="omniverse://192.168.22.141/ShenNongShi/Assets/robot_stand_instanceable.usd",
+    #     scale=(0.01, 0.01, 0.01),
+    # )
+    # cfg.func("/World/Origin8/Table", cfg, translation=(0.0, -0.75055, 0.0), orientation=(0.7071068, 0.7071068, 0.0, 0.0))
     # -- Robot
     emily_cfg = EMILY_CFG.replace(prim_path="/World/Origin8/Robot")
     emily_cfg.init_state.pos = (0.0, 0.0, 0.824)
@@ -183,13 +186,13 @@ def design_scene() -> tuple[dict, list[list[float]]]:
 
     # return the scene information
     scene_entities = {
-        "franka_panda": franka_panda,
-        "ur10": ur10,
-        "kinova_j2n7s300": kinova_j2n7s300,
-        "kinova_j2n6s300": kinova_j2n6s300,
-        "kinova_gen3n7": kinova_gen3n7,
-        "sawyer": sawyer,
-        "ur10e": ur10e,
+        # "franka_panda": franka_panda,
+        # "ur10": ur10,
+        # "kinova_j2n7s300": kinova_j2n7s300,
+        # "kinova_j2n6s300": kinova_j2n6s300,
+        # "kinova_gen3n7": kinova_gen3n7,
+        # "sawyer": sawyer,
+        # "ur10e": ur10e,
         "emily": emily,
     }
     return scene_entities, origins
@@ -204,6 +207,7 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
     # Simulate physics
     while simulation_app.is_running():
         # reset
+        """
         if count % 200 == 0:
             # reset counters
             sim_time = 0.0
@@ -232,6 +236,7 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
             robot.set_joint_position_target(joint_pos_target)
             # write data to sim
             robot.write_data_to_sim()
+        """
         # perform step
         sim.step()
         # update sim-time
