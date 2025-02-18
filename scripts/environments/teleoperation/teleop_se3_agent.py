@@ -41,7 +41,7 @@ import torch
 
 import omni.log
 
-from isaaclab.devices import Se3Gamepad, Se3HandTracking, Se3Keyboard, Se3SpaceMouse
+from isaaclab.devices import Se3Gamepad, Se3HandTracking, Se3Keyboard, Se3SpaceMouse, Se3RosTopic
 from isaaclab.envs import ViewerCfg
 from isaaclab.envs.ui import ViewportCameraController
 from isaaclab.managers import TerminationTermCfg as DoneTerm
@@ -107,6 +107,9 @@ def main():
         teleop_interface.add_callback("RESET", env.reset)
         viewer = ViewerCfg(eye=(-0.25, -0.3, 0.5), lookat=(0.6, 0, 0), asset_name="viewer")
         ViewportCameraController(env, viewer)
+    elif args_cli.teleop_device.lower() == "ros":
+        teleop_interface = Se3RosTopic()
+        teleop_interface.add_callback("RESET", env.reset)
     else:
         raise ValueError(
             f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse''handtracking'."
