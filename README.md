@@ -65,6 +65,13 @@ To initialize the submodule, run the following command:
 git submodule update --init --recursive
 ```
 
+Setup the conda environment each time you start a new session:
+```bash
+source ~/miniconda3/bin/activate
+conda activate env_isaaclab
+source ${ISAACSIM_PATH}/setup_conda_env.sh
+```
+
 ## License
 
 The Isaac Lab framework is released under [BSD-3 License](LICENSE). The `isaaclab_mimic` extension and its corresponding standalone scripts are released under [Apache 2.0](LICENSE-mimic). The license files of its dependencies and assets are present in the [`docs/licenses`](docs/licenses) directory.
