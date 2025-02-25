@@ -37,7 +37,7 @@ class UR10ReachEnvCfg(ReachEnvCfg):
         self.rewards.end_effector_orientation_tracking.params["asset_cfg"].body_names = ["ee_link"]
         # override actions
         self.actions.arm_action = mdp.JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
+            asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True
         )
         # override command generator body
         # end-effector is along x-direction
