@@ -64,6 +64,23 @@ To initialize the submodule, run the following command:
 ```bash
 git submodule update --init --recursive
 ```
+Then install the sns_lab package:
+```bash
+cd scripts/sns_lab
+pip install -e .
+```
+
+To initialize the environment:
+```bash
+source ~/miniconda3/bin/activate
+conda activate env_isaaclab
+source ${ISAACSIM_PATH}/setup_conda_env.sh
+```
+
+To use the latest ROS2 rclpy, install the latest gcc in the conda environment:
+```
+conda install -c conda-forge gcc=12
+```
 
 ## License
 
