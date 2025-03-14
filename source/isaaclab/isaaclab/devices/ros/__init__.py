@@ -5,3 +5,4 @@
 
 from .se3_rostopic import Se3RosTopic
 from .jointstate_rostopic import JointStateRosTopic
+from .emily_jointstate_rostopic import EmilyJointStateRosTopic
