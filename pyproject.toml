@@ -15,6 +15,7 @@ sections = [
     "ASSETS_FIRSTPARTY",
     "FIRSTPARTY",
     "EXTRA_FIRSTPARTY",
+    "TASK_FIRSTPARTY",
     "LOCALFOLDER",
 ]
 
@@ -55,8 +56,10 @@ known_third_party = [
 known_first_party = "isaaclab"
 known_assets_firstparty = "isaaclab_assets"
 known_extra_firstparty = [
-    "isaaclab_tasks"
+    "isaaclab_rl",
+    "isaaclab_mimic",
 ]
+known_task_firstparty = "isaaclab_tasks"
 # Imports from the local folder
 known_local_folder = "config"
 
@@ -73,7 +76,7 @@ exclude = [
 ]
 
 typeCheckingMode = "basic"
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 pythonPlatform = "Linux"
 enableTypeIgnoreComments = true
 
@@ -92,6 +95,6 @@ reportPrivateUsage = "warning"
 skip = '*.usd,*.svg,*.png,_isaac_sim*,*.bib,*.css,*/_build'
 quiet-level = 0
 # the world list should always have words in lower case
-ignore-words-list = "haa,slq,collapsable,buss"
+ignore-words-list = "haa,slq,collapsable,buss,reacher"
 # todo: this is hack to deal with incorrect spelling of "Environment" in the Isaac Sim grid world asset
 exclude-file = "source/isaaclab/isaaclab/sim/spawners/from_files/from_files.py"

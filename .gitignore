@@ -64,3 +64,13 @@ _build
 # Add these lines to .gitignore
 scripts/sns_lab/*
 !scripts/sns_lab/.gitkeep
+
+# Teleop Recorded Dataset
+/datasets/
+
+# Tests
+tests/
+
+# Docker history
+.isaac-lab-docker-history
+
