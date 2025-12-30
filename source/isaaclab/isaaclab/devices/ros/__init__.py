@@ -3,5 +3,5 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from .se3_rostopic import Se3RosTopic
-from .jointstate_rostopic import JointStateRosTopic
+from .se3_rostopic import Se3RosTopic, Se3RosTopicCfg
+from .jointstate_rostopic import JointStateRosTopic, JointStateRosTopicCfg

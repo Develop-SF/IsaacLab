@@ -63,7 +63,18 @@ import gymnasium as gym
 import logging
 import torch
 
-from isaaclab.devices import Se3Gamepad, Se3GamepadCfg, Se3Keyboard, Se3KeyboardCfg, Se3SpaceMouse, Se3SpaceMouseCfg, Se3RosTopic
+from isaaclab.devices import (
+    Se3Gamepad,
+    Se3GamepadCfg,
+    Se3Keyboard,
+    Se3KeyboardCfg,
+    Se3SpaceMouse,
+    Se3SpaceMouseCfg,
+    Se3RosTopic,
+    Se3RosTopicCfg,
+)
+
+
 from isaaclab.devices.openxr import remove_camera_configs
 from isaaclab.devices.teleop_device_factory import create_teleop_device
 from isaaclab.managers import TerminationTermCfg as DoneTerm
@@ -118,6 +129,7 @@ def main() -> None:
         logger.error(f"Failed to create environment: {e}")
         simulation_app.close()
         return
+
 
     # Flags for controlling teleoperation flow
     should_reset_recording_instance = False
@@ -205,7 +217,9 @@ def main() -> None:
                     Se3GamepadCfg(pos_sensitivity=0.1 * sensitivity, rot_sensitivity=0.1 * sensitivity)
                 )
             elif args_cli.teleop_device.lower() == "ros":
-                teleop_interface = Se3RosTopic()
+                teleop_interface = Se3RosTopic(Se3RosTopicCfg())
+
+
             else:
                 logger.error(f"Unsupported teleop device: {args_cli.teleop_device}")
                 logger.error("Configure the teleop device in the environment config.")
@@ -236,6 +250,8 @@ def main() -> None:
     # reset environment
     env.reset()
     teleop_interface.reset()
+    # Initialize action to zeros
+    action = torch.zeros((1, 7), device=env.device)
 
     print("Teleoperation started. Press 'R' to reset the environment.")
 
@@ -245,12 +261,28 @@ def main() -> None:
             # run everything in inference mode
             with torch.inference_mode():
                 # get device command
-                action = teleop_interface.advance()
-
+                new_action = teleop_interface.advance()
+                
+                # Check if we have a valid command (non-zero)
+                # We skip the 7th element (gripper) which is often 1.0 by default
+                if torch.any(new_action[..., :6] != 0):
+                    action = new_action
+                    if not hasattr(main, "_last_action_printed"):
+                        print(f"Applying Action: {action.cpu().numpy()}")
+                
                 # Only apply teleop commands when active
                 if teleoperation_active:
-                    # process actions
-                    actions = action.repeat(env.num_envs, 1)
+                    # env.action_space.shape is (num_envs, action_dim)
+                    action_dim = env.action_space.shape[-1]
+                    # truncate to match action space
+                    current_action = action[..., :action_dim]
+                    
+                    # process actions - ensure it is at least 2D [1, action_dim]
+                    if current_action.ndim == 1:
+                        current_action = current_action.unsqueeze(0)
+                    
+                    actions = current_action.repeat(env.num_envs, 1)
+                    
                     # apply actions
                     env.step(actions)
                 else:

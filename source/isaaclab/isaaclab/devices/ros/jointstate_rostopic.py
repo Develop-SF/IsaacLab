@@ -13,27 +13,66 @@ from scipy.spatial.transform import Rotation
 import logging
 
 # ROS2
-import rclpy
-import rclpy.node
-from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory
+try:
+    import rclpy
+    import rclpy.node
+    from sensor_msgs.msg import JointState
+    from trajectory_msgs.msg import JointTrajectory
+    HAS_ROS = True
+except (ImportError, ModuleNotFoundError):
+    HAS_ROS = False
+    rclpy = None
+    JointState = None
+    JointTrajectory = None
+
+
+import torch
+from dataclasses import dataclass
+
+
 # IsaacLab
-from ..device_base import DeviceBase
+from ..device_base import DeviceBase, DeviceCfg
+
+
+@dataclass
+class JointStateRosTopicCfg(DeviceCfg):
+    """Configuration for JointState ROS topic devices."""
+    class_type: type[DeviceBase] = None  # Set later
+
 
 logger = logging.getLogger(__name__)
 
 class JointStateRosTopic(DeviceBase):
     """ROS interface for JointState control."""
 
-    def __init__(self):
-        """Initialize the ROS interface for joint trajectory control."""
+    def __init__(self, cfg: JointStateRosTopicCfg):
+        """Initialize the ROS interface for joint trajectory control.
+        
+        Args:
+            cfg: Configuration object for ROS settings.
+        """
+        if not HAS_ROS:
+            raise ImportError(
+                "The 'rclpy' package is not installed or it is incompatible with your Python version. "
+                "Please ensure ROS2 Humble (Python 3.10) is installed and sourced, "
+                "or that you are running with a compatible Python environment."
+            )
         super().__init__()
+
+        self._sim_device = cfg.sim_device
         logger.info("Initializing JointStateRosTopic...")
+
         
         # Initialize ROS node
         if not rclpy.ok():
             logger.info("Initializing ROS context...")
-            rclpy.init()
+            try:
+                rclpy.init(args=[])
+            except Exception as e:
+                # If rclpy is already initialized, we don't need to do anything
+                if not rclpy.ok():
+                    raise e
+
         
         self.node = rclpy.node.Node('isaaclab_jointtrajectory_bridge')
         logger.info("Created ROS node: %s", self.node.get_name())
@@ -57,13 +96,15 @@ class JointStateRosTopic(DeviceBase):
 
     def __del__(self):
         """Cleanup ROS node."""
-        logger.info("Cleaning up ROS node...")
-        try:
-            self.node.destroy_node()
-            if rclpy.ok():
-                rclpy.shutdown()
-        except Exception as e:
-            logger.error("Error during ROS cleanup: %s", str(e))
+        if HAS_ROS:
+            logger.info("Cleaning up ROS node...")
+            try:
+                self.node.destroy_node()
+                if rclpy.ok():
+                    rclpy.shutdown()
+            except Exception as e:
+                logger.error("Error during ROS cleanup: %s", str(e))
+
 
     def joint_trajectory_cmd_callback(self, msg):
         """Callback for joint trajectory command messages."""
@@ -79,7 +120,7 @@ class JointStateRosTopic(DeviceBase):
         except Exception as e:
             logger.error("Error in joint trajectory callback: %s", str(e))
     
-    def advance(self) -> Optional[np.ndarray]:
+    def advance(self) -> Optional[torch.Tensor]:
         """Process ROS messages and return the latest joint positions."""
         try:
             # Process any pending callbacks
@@ -89,11 +130,12 @@ class JointStateRosTopic(DeviceBase):
             if self._new_command_received:
                 logger.debug("Returning new joint positions")
                 self._new_command_received = False
-                return self._current_joint_positions
+                return torch.tensor(self._current_joint_positions, dtype=torch.float32, device=self._sim_device)
             return None
         except Exception as e:
             logger.error("Error in advance: %s", str(e))
             return None
+
 
     def reset(self):
         """Reset the device state."""
@@ -112,3 +154,8 @@ class JointStateRosTopic(DeviceBase):
     Node name: {self.node.get_name()}
     Subscribed topic: joint_trajectory_cmd
     ROS context initialized: {rclpy.ok()}"""
+
+
+# Set the class type in the configuration
+JointStateRosTopicCfg.class_type = JointStateRosTopic
+

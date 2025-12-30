@@ -11,45 +11,88 @@ from collections.abc import Callable
 from scipy.spatial.transform import Rotation
 
 # ROS2
-import rclpy
-import rclpy.node
-from geometry_msgs.msg import TwistStamped
-from std_msgs.msg import Bool
-from rclpy.parameter import Parameter
+try:
+    import rclpy
+    import rclpy.node
+    from geometry_msgs.msg import TwistStamped
+    from std_msgs.msg import Bool
+    from rclpy.parameter import Parameter
+    HAS_ROS = True
+except (ImportError, ModuleNotFoundError):
+    HAS_ROS = False
+    rclpy = None
+    TwistStamped = None
+    Bool = None
+
+
+import torch
+from dataclasses import dataclass
+
 
 # IsaacLab
-from ..device_base import DeviceBase
+from ..device_base import DeviceBase, DeviceCfg
+
+
+@dataclass
+class Se3RosTopicCfg(DeviceCfg):
+    """Configuration for SE3 ROS topic devices."""
+    pos_sensitivity: float = 0.1
+    rot_sensitivity: float = 0.2
+    timeout: float = 0.01
+    class_type: type[DeviceBase] = None  # Set later to avoid circular reference
+
 
 
 class Se3RosTopic(DeviceBase):
     """ROS interface for SE(3) control."""
 
-    def __init__(self, pos_sensitivity: float = 0.1, rot_sensitivity: float = 0.2, timeout: float = 0.01):
+    def __init__(self, cfg: Se3RosTopicCfg):
         """Initialize the ROS interface.
         
         Args:
-            pos_sensitivity: Magnitude of input position command scaling. Defaults to 0.4.
-            rot_sensitivity: Magnitude of scale input rotation commands scaling. Defaults to 0.8.
-            timeout: Time in seconds after which commands are reset if no new messages 
-                    are received. Defaults to 0.01 (10ms).
+            cfg: Configuration object for ROS settings.
         """
+        if not HAS_ROS:
+            raise ImportError(
+                "The 'rclpy' package is not installed or it is incompatible with your Python version. "
+                "Please ensure ROS2 Humble (Python 3.10) is installed and sourced, "
+                "or that you are running with a compatible Python environment."
+            )
         super().__init__()
+
+        # store inputs
+        self.pos_sensitivity = cfg.pos_sensitivity
+        self.rot_sensitivity = cfg.rot_sensitivity
+        self.timeout = cfg.timeout
+        self._sim_device = cfg.sim_device
+
         # Initialize ROS node
-        rclpy.init()
+
+        if not rclpy.ok():
+            try:
+                rclpy.init(args=[])
+            except Exception as e:
+                # If rclpy is already initialized, we don't need to do anything
+                if not rclpy.ok():
+                    raise e
+
         self.node = rclpy.node.Node('isaaclab_se3_bridge')
         
         # Declare parameters with default values
-        self.node.declare_parameter('pos_sensitivity', pos_sensitivity)
-        self.node.declare_parameter('rot_sensitivity', rot_sensitivity)
+        self.node.declare_parameter('pos_sensitivity', self.pos_sensitivity)
+        self.node.declare_parameter('rot_sensitivity', self.rot_sensitivity)
+
         
         # sub twist command
         self.sub_twist_cmd = self.node.create_subscription(TwistStamped, 'twist_cmd', self.twist_cmd_callback, 1)
         # sub gripper command
         self.sub_gripper_cmd = self.node.create_subscription(Bool, 'gripper_cmd', self.gripper_cmd_callback, 1)
         # create timer for command timeout
-        self.timer = self.node.create_timer(timeout, self.timer_callback)
+        self.timer = self.node.create_timer(self.timeout, self.timer_callback)
+
 
         # default flags
+
         self._close_gripper = False
         self._delta_pos = np.zeros(3)  # (x, y, z)
         self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
@@ -61,8 +104,12 @@ class Se3RosTopic(DeviceBase):
 
     def __del__(self):
         """Cleanup ROS node."""
-        self.node.destroy_node()
-        rclpy.shutdown()
+        if HAS_ROS:
+            if hasattr(self, 'node'):
+                self.node.destroy_node()
+            if rclpy.ok():
+                rclpy.shutdown()
+
     
     def __str__(self) -> str:
         """Returns: A string containing the information of joystick."""
@@ -71,7 +118,7 @@ class Se3RosTopic(DeviceBase):
         msg += "\tIt also takes ROS2 std_msgs/Bool messages for gripper commands.\n"
         msg += "\t----------------------------------------------\n"
         msg += "\tExample usage:\n"
-        msg += "\t\tros2 topic pub /twist_cmd geometry_msgs/msg/Twist '{linear: {x: -1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}' -r 1 \n"
+        msg += "\t\tros2 topic pub /twist_cmd geometry_msgs/msg/TwistStamped '{twist: {linear: {x: -1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}}' -r 1 \n"
         msg += "\t\tros2 topic pub /gripper_cmd std_msgs/Bool '{data: true}' -once \n"
         return msg
 
@@ -115,11 +162,13 @@ class Se3RosTopic(DeviceBase):
         # Reset flag for next timer period
         self._new_twist_received = False
 
-    def advance(self) -> tuple[np.ndarray, bool]:
+    def advance(self) -> torch.Tensor:
         """Provides the latest command state from ROS messages.
 
         Returns:
-            A tuple containing the delta pose command and gripper commands.
+            torch.Tensor: A 7-element tensor containing:
+                - delta pose: First 6 elements as [x, y, z, rx, ry, rz] in meters and radians.
+                - gripper command: Last element as a binary value (+1.0 for open, -1.0 for close).
         """
         # Process any pending callbacks
         rclpy.spin_once(self.node, timeout_sec=0)
@@ -127,7 +176,12 @@ class Se3RosTopic(DeviceBase):
         # Convert euler angles to rotation vector
         rot_vec = Rotation.from_euler("XYZ", self._delta_rot).as_rotvec()
         # Return the command and gripper state
-        return np.concatenate([self._delta_pos, rot_vec]), self._close_gripper
+        command = np.concatenate([self._delta_pos, rot_vec])
+        gripper_value = -1.0 if self._close_gripper else 1.0
+        command = np.append(command, gripper_value)
+
+        return torch.tensor(command, dtype=torch.float32, device=self._sim_device)
+
 
     def reset(self):
         """Reset the device state."""
@@ -144,4 +198,8 @@ class Se3RosTopic(DeviceBase):
             func: The function to call. The callback function should not
                 take any arguments.
         """
-        self._additional_callbacks[key] = func 
+        self._additional_callbacks[key] = func
+
+
+# Set the class type in the configuration
+Se3RosTopicCfg.class_type = Se3RosTopic
